@@ -4,7 +4,6 @@ import imbroglio.Maze;
 import imbroglio.Position2D;
 
 import javax.swing.JFrame;
-import javax.swing.JTextArea;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.Font;
@@ -16,23 +15,41 @@ import java.util.List;
 import java.util.Random;
 
 public class Game {
+    public static final Font FONT = new Font("Courier", Font.PLAIN, 18);
 
-    private Random random = new Random();
+    public static final Color BROWN = new Color(165, 42, 42);
+    public static final Color ORANGE = new Color(255, 165, 0);
+
+    private static final Random RNG = new Random();
+
+    private static final int WINDOW_WIDTH = 80;
+    private static final int WINDOW_HEIGHT = 30;
+    private static final int STATUS_HEIGHT = 5;
 
     private JFrame jFrame;
     private Container container;
-    private JTextArea[][] textGrid;
+    private TilePanel[][] textGrid;
 
     private int width;
     private int height;
+    private int mapWidth;
+    private int mapHeight;
     private char[][] gameMap;
     private boolean[][] update;
-
-    public static final Font FONT = new Font("Courier", Font.PLAIN, 18);;
 
     private Position2D playerPos;
     private boolean gameOver = false;
     private PlayerAction playerAction;
+
+    int health = 100;
+    int maxHealth = 100;
+    int stamina = 42;
+    int maxStamina = 42;
+    int experience = 0;
+    int nextLevelExperience = 10;
+    int level = 1;
+    int treasure = 0;
+
 
     public Game() {
         initGameWindow();
@@ -41,10 +58,12 @@ public class Game {
     public void initGameWindow() {
         jFrame = new JFrame("Hello, RogueLike!");
         container = jFrame.getContentPane();
+        container.setBackground(Color.BLACK);
 
-
-        width = 60;
-        height = 30;
+        width = WINDOW_WIDTH;
+        height = WINDOW_HEIGHT;
+        mapHeight = this.height - STATUS_HEIGHT;
+        mapWidth = this.width;
 
         update = new boolean[height][width];
         for (int y = 0; y < height; ++y) {
@@ -54,16 +73,12 @@ public class Game {
         }
 
         container.setLayout(new GridLayout(height, width));
-        textGrid = new JTextArea[height][width];
+        textGrid = new TilePanel[height][width];
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
-                JTextArea textArea = new JTextArea();
-                textArea.setFont(FONT);
-                textArea.setAlignmentX(JTextArea.CENTER_ALIGNMENT);
-                textArea.setAlignmentY(JTextArea.CENTER_ALIGNMENT);
-                textArea.setEditable(false);
+                TilePanel textArea = new TilePanel();
                 textGrid[y][x] = textArea;
-                container.add(textArea);
+                container.add(textArea.getJPanel());
             }
         }
 
@@ -93,18 +108,23 @@ public class Game {
     }
 
     public void drawMapUpdates() {
-        // draw map
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
+        for (int y = 0; y < mapHeight; ++y) {
+            for (int x = 0; x < mapWidth; ++x) {
                 if (update[y][x]) {
                     update[y][x] = false;
-                    char b = gameMap[y][x];
-                    String symbol = "" + b;
-                    JTextArea textArea = textGrid[y][x];
-                    textArea.setText(symbol);
-                    if (symbol.equals("#")) {
+                    char c = gameMap[y][x];
+                    String symbol = "" + c;
+                    TilePanel textArea = textGrid[y][x];
+                    textArea.setChar(c);
+                    if (c == '#') {
                         textArea.setBackground(Color.BLACK);
                         textArea.setForeground(Color.RED);
+                    } else if (c == '"') {
+                        textArea.setBackground(Color.BLACK);
+                        textArea.setForeground(Color.GREEN);
+                    } else if (c == '$') {
+                        textArea.setBackground(Color.BLACK);
+                        textArea.setForeground(Color.YELLOW);
                     } else {
                         textArea.setBackground(Color.BLACK);
                         textArea.setForeground(Color.DARK_GRAY);
@@ -113,35 +133,156 @@ public class Game {
             }
         }
         // draw playerPos
-        JTextArea playerTextArea = textGrid[playerPos.y()][playerPos.x()];
+        TilePanel playerTextArea = textGrid[playerPos.y()][playerPos.x()];
         playerTextArea.setText("@");
         playerTextArea.setBackground(Color.BLACK);
         playerTextArea.setForeground(Color.WHITE);
-
-        // draw test text
-        drawText("Health", 10, 10);
-        drawText("Stamina", 11, 10);
-        drawText("Experience", 12, 10);
-        drawText("Treasure", 13, 10);
     }
 
-    public void drawText(String text, Position2D p) {
-        for (int i = 0; i < text.length(); i++) {
-            JTextArea playerTextArea = textGrid[p.y()][p.x() + i];
-            playerTextArea.setText(String.valueOf(text.charAt(i)));
-            playerTextArea.setBackground(Color.BLACK);
-            playerTextArea.setForeground(Color.WHITE);
+    public void drawStats() {
+        // --------------------------------------------
+        // Draw Health
+        // --------------------------------------------
+        int cursor = 0;
+        int sy = mapHeight;
+
+        String text = "Health: ";
+        drawTextLeft(text, Color.WHITE, sy, cursor);
+
+        cursor += text.length();
+        text = String.valueOf(health);
+        drawTextLeft(text, Color.RED, sy, cursor);
+
+        cursor += text.length();
+        text = "/";
+        drawTextLeft(text,  Color.WHITE, sy, cursor);
+
+        cursor += text.length();
+        text = String.valueOf(maxHealth);
+        drawTextLeft(text, Color.RED, sy, cursor);
+
+        cursor += text.length();
+        while (cursor < 20) {
+            drawTextLeft(" ", Color.WHITE, sy, cursor++);
+        }
+        // --------------------------------------------
+        // draw Stamina stat
+        // --------------------------------------------
+        cursor += text.length();
+        cursor += 1;
+        cursor = 0;
+        sy += 1;
+
+        text = "Stamina: ";
+        drawTextLeft(text, Color.WHITE, sy, cursor);
+
+        cursor += text.length();
+        text = String.valueOf(stamina);
+        drawTextLeft(text, Color.GREEN, sy, cursor);
+
+        cursor += text.length();
+        text = "/";
+        drawTextLeft(text,  Color.WHITE, sy, cursor);
+
+        cursor += text.length();
+        text = String.valueOf(maxStamina);
+        drawTextLeft(text, Color.GREEN, sy, cursor);
+
+        cursor += text.length();
+        while (cursor < 20) {
+            drawTextLeft(" ", Color.WHITE, sy, cursor++);
+        }
+        // --------------------------------------------
+        // draw Experience stat
+        // --------------------------------------------
+        cursor += text.length();
+        cursor += 1;
+        cursor = 0;
+        sy += 1;
+
+        text = "Exp: ";
+        drawTextLeft(text, Color.WHITE, sy, cursor);
+
+        cursor += text.length();
+        text = String.valueOf(experience);
+        drawTextLeft(text, Color.CYAN, sy, cursor);
+
+        cursor += text.length();
+        text = "/";
+        drawTextLeft(text,  Color.WHITE, sy, cursor);
+
+        cursor += text.length();
+        text = String.valueOf(nextLevelExperience);
+        drawTextLeft(text, Color.CYAN, sy, cursor);
+
+        cursor += text.length();
+        while (cursor < 20) {
+            drawTextLeft(" ", Color.WHITE, sy, cursor++);
+        }
+
+        // --------------------------------------------
+        // draw Level stat
+        // --------------------------------------------
+        cursor += 1;
+        cursor = 0;
+        sy += 1;
+
+        text = "Lv: ";
+        drawTextLeft(text, Color.WHITE, sy, cursor);
+
+        cursor += text.length();
+        text = String.valueOf(level);
+        drawTextLeft(text, Color.MAGENTA, sy, cursor);
+
+        cursor += text.length();
+        while (cursor < 20) {
+            drawTextLeft(" ", Color.WHITE, sy, cursor++);
+        }
+        // --------------------------------------------
+        // draw Treasure stat
+        // --------------------------------------------
+        cursor += 1;
+        cursor = 0;
+        sy += 1;
+
+        text = "Treasure: ";
+        drawTextLeft(text, Color.WHITE, sy, cursor);
+
+        cursor += text.length();
+        text = String.valueOf(treasure);
+        drawTextLeft(text, Color.YELLOW, sy, cursor);
+
+        cursor += text.length();
+        while (cursor < 20) {
+            drawTextLeft(" ", Color.WHITE, sy, cursor++);
         }
     }
 
     public void drawText(String text, int y, int x) {
         for (int i = 0; i < text.length(); i++) {
-            JTextArea playerTextArea = textGrid[y][x + i];
+            TilePanel playerTextArea = textGrid[y][x + i];
             playerTextArea.setText(String.valueOf(text.charAt(i)));
             playerTextArea.setBackground(Color.BLACK);
             playerTextArea.setForeground(Color.WHITE);
         }
     }
+
+    public void drawTextLeft(String text, Color fgColor, int y, int x) {
+        for (int i = 0; i < text.length(); i++) {
+            TilePanel playerTextArea = textGrid[y][x + i];
+            playerTextArea.setText(String.valueOf(text.charAt(i)));
+            playerTextArea.setForeground(fgColor);
+        }
+    }
+
+    public void drawTextRight(String text, Color fgColor, int y, int x) {
+        for (int i = 0; i < text.length(); i++) {
+            TilePanel playerTextArea = textGrid[y][x - i];
+            playerTextArea.setText(String.valueOf(text.charAt(text.length() - 1 - i)));
+            playerTextArea.setForeground(fgColor);
+        }
+    }
+
 
     /**
      * Display the JFrame of this game.
@@ -155,16 +296,16 @@ public class Game {
 
     public void generateGameData() {
         // generate maze
-        Maze maze = Maze.generateCellularAutomataRoom(width, height);
+        Maze maze = Maze.generateCellularAutomataRoom(mapWidth, mapHeight);
         for (int i = 0; i < 3; i++) {
             maze.cellularAutomataIteration();
             maze.connectDisconnectedComponents();
         }
 
         // generate map from maze
-        gameMap = new char[height][width];
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
+        gameMap = new char[mapHeight][mapWidth];
+        for (int y = 0; y < mapHeight; y++) {
+            for (int x = 0; x < mapWidth; x++) {
                 byte b = maze.getCell(x, y);
                 char c = b == Maze.WALL ? '#' : '.';
                 gameMap[y][x] = c;
@@ -173,8 +314,8 @@ public class Game {
 
         // init playerPos state
         List<Position2D> openPaths = new ArrayList<>();
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
+        for (int y = 0; y < mapHeight; y++) {
+            for (int x = 0; x < mapWidth; x++) {
                 if (gameMap[y][x] == '.') {
                     Position2D openPos = new Position2D(x, y);
                     openPaths.add(openPos);
@@ -183,6 +324,21 @@ public class Game {
         }
 
         playerPos = openPaths.remove(0);
+
+        // add items
+        int foodCount = RNG.nextInt(10) + 10;
+        for (int i = 0; i < foodCount; i++) {
+            Position2D foodPos = openPaths.remove(RNG.nextInt(openPaths.size()));
+            gameMap[foodPos.y()][foodPos.x()] = '"';
+        }
+
+        // add treasure
+        int treasureCount = RNG.nextInt(5) + 5;
+        for (int i = 0; i < treasureCount; i++) {
+            Position2D treasurePos = openPaths.remove(RNG.nextInt(openPaths.size()));
+            gameMap[treasurePos.y()][treasurePos.x()] = '$';
+        }
+
     }
 
     /**
@@ -191,6 +347,7 @@ public class Game {
     public void startGame() {
         generateGameData();
         drawMapUpdates();
+        drawStats();
         display();
     }
 
@@ -200,6 +357,7 @@ public class Game {
         respondToInputs();
         updateGameState();
         drawMapUpdates();
+        drawStats();
         System.out.println("iteration " + ++iterations);
     }
 
@@ -265,17 +423,51 @@ public class Game {
         if (withinBounds(newPos) && !occupied(newPos)) {
             update[playerPos.y()][playerPos.x()] = true;
             playerPos = newPos;
-            System.out.println("player position: "+ playerPos);
+            stamina -= 1;
+
+            // ------------------------------------------------
+            // check for items to collect
+            // ------------------------------------------------
+
+            // found food
+            if (gameMap[newPos.y()][newPos.x()] == '"') {
+                gameMap[newPos.y()][newPos.x()] = '.';
+                stamina += 25;
+                experience += 1;
+            }
+
+            // found treasure
+            if (gameMap[newPos.y()][newPos.x()] == '$') {
+                gameMap[newPos.y()][newPos.x()] = '.';
+                treasure += 10;
+                experience += 2;
+            }
+        }
+
+        // check for level-up
+        if (experience >= nextLevelExperience) {
+            nextLevelExperience += (int) (nextLevelExperience * 1.5);
+            level += 1;
+
+            int healthGained = 10 + level + RNG.nextInt(10 + level);
+            health += healthGained;
+            maxHealth += healthGained;
+
+            int staminaGained = 5 + level + RNG.nextInt(5 + level);
+            health += staminaGained;
+            maxHealth += staminaGained;
         }
     }
 
+
+
     public boolean withinBounds(Position2D p) {
-        return p.x() >= 0 && p.x() < width && p.y() >= 0 && p.y() < height;
+        return p.x() >= 0 && p.x() < mapWidth && p.y() >= 0 && p.y() < mapHeight;
     }
 
     public boolean occupied(Position2D p) {
         char c = gameMap[p.y()][p.x()];
-        return c != '.';
+        return c == '#';
     }
 
     public void updateGameState() {
