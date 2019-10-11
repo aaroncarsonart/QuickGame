@@ -38,11 +38,6 @@ public class Game {
     private static final int WINDOW_HEIGHT = 30;
     private static final int STATUS_HEIGHT = 5;
 
-    private JFrame jFrame;
-    private Container container;
-    private KeyListener keyListener;
-    private TilePanel[][] textGrid;
-
     private int width;
     private int height;
     private int mapWidth;
@@ -67,20 +62,21 @@ public class Game {
     int level = 1;
     int treasure = 0;
 
+    private JTextGrid textGrid;
+    private KeyListener keyListener;
 
     public Game() {
         initGameWindow();
     }
 
     public void initGameWindow() {
-        jFrame = new JFrame("QuickGame");
-        container = jFrame.getContentPane();
-        container.setBackground(Color.BLACK);
 
         width = WINDOW_WIDTH;
         height = WINDOW_HEIGHT;
-        mapHeight = this.height - STATUS_HEIGHT;
-        mapWidth = this.width;
+        mapHeight = height - STATUS_HEIGHT;
+        mapWidth = width;
+
+        textGrid = new JTextGrid(height, width);
 
         update = new boolean[height][width];
         for (int y = 0; y < height; ++y) {
@@ -89,17 +85,7 @@ public class Game {
             }
         }
 
-        container.setLayout(new GridLayout(height, width));
-        textGrid = new TilePanel[height][width];
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                TilePanel textArea = new TilePanel();
-                textGrid[y][x] = textArea;
-                container.add(textArea.getJPanel());
-            }
-        }
-
-        jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        JFrame jFrame = textGrid.getJFrame();
         keyListener = createKeyListener();
         jFrame.addKeyListener(keyListener);
     }
@@ -135,37 +121,35 @@ public class Game {
                     update[y][x] = false;
                     char c = gameMap[y][x];
                     String symbol = "" + c;
-                    TilePanel textArea = textGrid[y][x];
-                    textArea.setChar(c);
+                    textGrid.setChar(c, y, x);
                     if (c == '#') {
 //                        textArea.setBackground(DARK_RED);
 //                        textArea.setForeground(Color.RED);
-                        textArea.setBackground(DARK_BROWN);
-                        textArea.setForeground(BROWN);
+                        textGrid.setBackground(DARK_BROWN, y, x);
+                        textGrid.setForeground(BROWN, y, x);
                     } else if (c == '"') {
-                        textArea.setBackground(Color.BLACK);
-                        textArea.setForeground(Color.GREEN);
+                        textGrid.setBackground(Color.BLACK, y, x);
+                        textGrid.setForeground(Color.GREEN, y, x);
                     } else if (c == '$') {
-                        textArea.setBackground(Color.BLACK);
-                        textArea.setForeground(Color.YELLOW);
+                        textGrid.setBackground(Color.BLACK, y, x);
+                        textGrid.setForeground(Color.YELLOW, y, x);
                     } else if (c == 'M') {
-                        textArea.setBackground(Color.BLACK);
-                        textArea.setForeground(Color.RED);
+                        textGrid.setBackground(Color.BLACK, y, x);
+                        textGrid.setForeground(Color.RED, y, x);
                     } else if (c == '~') {
-                        textArea.setBackground(Color.BLACK);
-                        textArea.setForeground(Color.CYAN);
+                        textGrid.setBackground(Color.BLACK, y, x);
+                        textGrid.setForeground(Color.CYAN, y, x);
                     } else {
-                        textArea.setBackground(Color.BLACK);
-                        textArea.setForeground(Color.DARK_GRAY);
+                        textGrid.setBackground(Color.BLACK, y, x);
+                        textGrid.setForeground(Color.DARK_GRAY, y, x);
                     }
                 }
             }
         }
         // draw playerPos
-        TilePanel playerTextArea = textGrid[playerPos.y()][playerPos.x()];
-        playerTextArea.setText("@");
-        playerTextArea.setBackground(Color.BLACK);
-        playerTextArea.setForeground(Color.WHITE);
+        textGrid.setText("@", playerPos.y(), playerPos.x());
+        textGrid.setBackground(Color.BLACK, playerPos.y(), playerPos.x());
+        textGrid.setForeground(Color.WHITE, playerPos.y(), playerPos.x());
 
 //        // drawPathFinding
 //        Position2D finish = new Position2D(mapWidth -1, mapHeight -1);
@@ -316,17 +300,15 @@ public class Game {
 
     public void drawTextLeft(String text, Color fgColor, int y, int x) {
         for (int i = 0; i < text.length(); i++) {
-            TilePanel playerTextArea = textGrid[y][x + i];
-            playerTextArea.setText(String.valueOf(text.charAt(i)));
-            playerTextArea.setForeground(fgColor);
+            textGrid.setChar(text.charAt(i), y, x + i);
+            textGrid.setForeground(fgColor, y, x + i);
         }
     }
 
     public void drawTextRight(String text, Color fgColor, int y, int x) {
         for (int i = 0; i < text.length(); i++) {
-            TilePanel playerTextArea = textGrid[y][x - i];
-            playerTextArea.setText(String.valueOf(text.charAt(text.length() - 1 - i)));
-            playerTextArea.setForeground(fgColor);
+            textGrid.setChar(text.charAt(text.length() - 1 - i), y, x - i);
+            textGrid.setForeground(fgColor, y, x - i);
         }
     }
 
@@ -334,10 +316,7 @@ public class Game {
      * Display the JFrame of this game.
      */
     public void display() {
-        jFrame.pack();
-        jFrame.setLocationRelativeTo(null);
-        jFrame.setVisible(true);
-        jFrame.requestFocusInWindow();
+        textGrid.show();
     }
 
     public void generateGameData() {
@@ -482,7 +461,7 @@ public class Game {
         respondToInputs();
         drawMapUpdates();
         drawStats();
-        jFrame.getContentPane().repaint();
+        textGrid.getJFrame().getContentPane().repaint();
         System.out.println("iteration " + ++iterations);
     }
 
@@ -699,6 +678,7 @@ public class Game {
     }
 
     public void gameOver(String message) {
+        JFrame jFrame = textGrid.getJFrame();
         jFrame.removeKeyListener(keyListener);
         drawTextLeft("Game Over!  " + message, Color.WHITE, mapHeight + 2, 20);
         jFrame.getContentPane().repaint();
