@@ -15,6 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Random;
+import java.util.Stack;
 
 /**
  * A quickly developed game.  Cutting corners in code design for the sake of
@@ -25,18 +26,22 @@ import java.util.Random;
  * The goal is results, not fancily architectured code.
  */
 public class Game {
-    public static final Font FONT = new Font("Courier", Font.PLAIN, 18);
+    public static final Font FONT = new Font("Courier", Font.PLAIN, 22);
+    private static final int WINDOW_WIDTH = 80;
+    private static final int WINDOW_HEIGHT = 30;
+    private static final int STATUS_HEIGHT = 5;
 
     public static final Color BROWN = new Color(165, 82, 0);
     public static final Color DARK_BROWN = new Color(50, 15, 0);
     public static final Color ORANGE = new Color(255, 165, 0);
     public static final Color DARK_RED = new Color(45, 0, 0);
+    public static final Color DARK_CYAN = new Color(0, 30, 30);
+    public static final Color DARK_GREEN = new Color(0, 30, 0);
+    public static final Color DARK_YELLOW = new Color(30, 30, 0);
+
 
     private static final Random RNG = new Random();
 
-    private static final int WINDOW_WIDTH = 80;
-    private static final int WINDOW_HEIGHT = 30;
-    private static final int STATUS_HEIGHT = 5;
 
     private int width;
     private int height;
@@ -137,7 +142,7 @@ public class Game {
                         textGrid.setBackground(Color.BLACK, y, x);
                         textGrid.setForeground(Color.RED, y, x);
                     } else if (c == '~') {
-                        textGrid.setBackground(Color.BLACK, y, x);
+                        textGrid.setBackground(DARK_CYAN, y, x);
                         textGrid.setForeground(Color.CYAN, y, x);
                     } else {
                         textGrid.setBackground(Color.BLACK, y, x);
@@ -148,7 +153,7 @@ public class Game {
         }
         // draw playerPos
         textGrid.setText("@", playerPos.y(), playerPos.x());
-        textGrid.setBackground(Color.BLACK, playerPos.y(), playerPos.x());
+        //textGrid.setBackground(Color.BLACK, playerPos.y(), playerPos.x());
         textGrid.setForeground(Color.WHITE, playerPos.y(), playerPos.x());
 
 //        // drawPathFinding
@@ -357,47 +362,116 @@ public class Game {
         // ------------------------------------------------------
 
         // add food
-        int foodCount = RNG.nextInt(120) + 120;
+
+        // TODO: add blobs of FOOD (USE small cellular automata blobs
+
+        int foodCount = RNG.nextInt(80) + 80;
         for (int i = 0; i < foodCount; i++) {
+            if (openPaths.isEmpty()) {
+                break;
+            }
             Position2D foodPos = openPaths.remove(RNG.nextInt(openPaths.size()));
             gameMap[foodPos.y()][foodPos.x()] = '"';
         }
 
+        char tile = '"';
+        int count = 5;
+        int maxNeighbors = 20 + RNG.nextInt(20);
+        addBlobsOfTiles(tile, openPaths, count, maxNeighbors);
+
+//        // add water
+//        int waterCount = RNG.nextInt(60) + 60;
+//        for (int i = 0; i < waterCount; i++) {
+//            if (openPaths.isEmpty()) {
+//                break;
+//            }
+//            Position2D waterPos = openPaths.remove(RNG.nextInt(openPaths.size()));
+//            gameMap[waterPos.y()][waterPos.x()] = '~';
+//        }
+
+        tile = '~';
+        count = 5;
+        maxNeighbors = 10 + RNG.nextInt(10);
+        addBlobsOfTiles(tile, openPaths, count, maxNeighbors);
+
+        tile = '~';
+        count = 10;
+        maxNeighbors = 3 + RNG.nextInt(3);
+        addBlobsOfTiles(tile, openPaths, count, maxNeighbors);
+
+
         // add treasure
-        int treasureCount = RNG.nextInt(50) + 50;
+        int treasureCount = RNG.nextInt(5) + 5;
         for (int i = 0; i < treasureCount; i++) {
+            if (openPaths.isEmpty()) {
+                break;
+            }
             Position2D treasurePos = openPaths.remove(RNG.nextInt(openPaths.size()));
             gameMap[treasurePos.y()][treasurePos.x()] = '$';
         }
 
-        // add monsters
-        monsterMap = new Monster[mapHeight][mapWidth];
-        monsterList = new ArrayList<>();
+        tile = '$';
+        count = 15;
+        maxNeighbors = 5 + RNG.nextInt(5);
+        addBlobsOfTiles(tile, openPaths, count, maxNeighbors);
 
-//        int monsterCount = 1;
-        int monsterCount = RNG.nextInt(8) + 8;
-        for (int i = 0; i < monsterCount; i++) {
-            Position2D monsterPos = openPaths.remove(RNG.nextInt(openPaths.size()));
-            gameMap[monsterPos.y()][monsterPos.x()] = 'M';
-
-            Monster monster = new Monster('M', monsterPos, 10);
-            monsterMap[monsterPos.y()][monsterPos.x()] = monster;
-            monsterList.add(monster);
-
-            List<Position2D> path = pathfindBFS(monsterPos, playerPos, 0);
-            monster.setMovementPath(path);
-        }
-        test = openPaths.remove(RNG.nextInt(openPaths.size()));
-
-        // add water
-        int waterCount = RNG.nextInt(30) + 30;
-        for (int i = 0; i < waterCount; i++) {
-            Position2D waterPos = openPaths.remove(RNG.nextInt(openPaths.size()));
-            gameMap[waterPos.y()][waterPos.x()] = '~';
-        }
+//        // add monsters
+//        monsterMap = new Monster[mapHeight][mapWidth];
+//        monsterList = new ArrayList<>();
+//
+////        int monsterCount = 1;
+//        int monsterCount = RNG.nextInt(40) + 40;
+//        for (int i = 0; i < monsterCount; i++) {
+//            if (openPaths.isEmpty()) {
+//                break;
+//            }
+//            Position2D monsterPos = openPaths.remove(RNG.nextInt(openPaths.size()));
+//            gameMap[monsterPos.y()][monsterPos.x()] = 'M';
+//
+//            Monster monster = new Monster('M', monsterPos, 10);
+//            monsterMap[monsterPos.y()][monsterPos.x()] = monster;
+//            monsterList.add(monster);
+//
+//            List<Position2D> path = pathfindBFS(monsterPos, playerPos, 0);
+//            monster.setMovementPath(path);
+//        }
     }
 
-    Position2D test;
+    public void addBlobsOfTiles(char tile, List<Position2D> openPaths, int count, int maxNeighbors) {
+        for (int i = 0; i < count; i++) {
+            if (openPaths.isEmpty()) {
+                break;
+            }
+            Position2D foodPos = openPaths.remove(RNG.nextInt(openPaths.size()));
+            Stack<Position2D> positions = new Stack<>();
+            positions.add(foodPos);
+
+            for (int j = 0; j < maxNeighbors; j++) {
+                Position2D next = positions.peek();
+                List<Position2D> neighbors = next.getNeighbors();
+                for (int k = 0; k < neighbors.size(); k++) {
+                    Position2D neighbor = neighbors.get(k);
+                    if (positions.contains(neighbor) || !withinBounds(neighbor)) {
+                        neighbors.remove(neighbor);
+                    }
+                }
+                if (neighbors.isEmpty()) {
+                    continue;
+                }
+                Position2D nextNeighbor = neighbors.get(RNG.nextInt(neighbors.size()));
+                positions.add(nextNeighbor);
+            }
+
+            for (Position2D position : positions) {
+                if (withinBounds(position)) {
+                    openPaths.remove(position);
+                    gameMap[position.y()][position.x()] = tile;
+                }
+            }
+        }
+
+    }
+
 
     /**
      * Run a BFS bathfinding algorithm between two positions on the gameMap.
@@ -515,7 +589,7 @@ public class Game {
     public void respondToInputs() {
         movePlayer();
         checkForLevelUp();
-        moveMonsters();
+        //moveMonsters();
     }
 
     public void movePlayer() {
@@ -531,7 +605,11 @@ public class Game {
         if (newPos != playerPos && withinBounds(newPos) && !occupied(newPos)) {
             update[playerPos.y()][playerPos.x()] = true;
             playerPos = newPos;
-            energy -= 1;
+            if (gameMap[newPos.y()][newPos.x()] == '~') {
+                energy -= 2;
+            } else {
+                energy -= 1;
+            }
 
             if (energy <= 0) {
                 treasure -= energy * 10;
@@ -550,22 +628,21 @@ public class Game {
             // found food
             if (gameMap[newPos.y()][newPos.x()] == '"') {
                 gameMap[newPos.y()][newPos.x()] = '.';
-                energy += 10;
-                experience += 1;
+                energy += 6;
             }
 
             // found treasure
             if (gameMap[newPos.y()][newPos.x()] == '$') {
                 gameMap[newPos.y()][newPos.x()] = '.';
-                treasure += 10;
-                experience += 2;
+                treasure += 25;
+                experience += 1;
             }
 
             // found water
             if (gameMap[newPos.y()][newPos.x()] == '~') {
                 if (health < maxHealth) {
                     gameMap[newPos.y()][newPos.x()] = '.';
-                    health += 2 + RNG.nextInt(level);
+                    health += 1 + RNG.nextInt(level);
                     if (health > maxHealth) {
                         health = maxHealth;
                     }

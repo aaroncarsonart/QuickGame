@@ -1,5 +1,7 @@
 package com.aaroncarsonart.quickgame;
 
+import imbroglio.Maze;
+
 import javax.swing.JFrame;
 import java.awt.Color;
 import java.awt.Container;
@@ -87,5 +89,23 @@ public class JTextGrid {
 
     public static void main(String[] args) {
         JTextGrid tileGrid = new JTextGrid(30, 80);
+
+        int width = 10;
+        int height = 10;
+        Maze maze = Maze.generateCellularAutomataRoom(5, 5);
+        for (int i = 0; i < 3; i++) {
+            maze.cellularAutomataIteration();
+            maze.connectDisconnectedComponents();
+        }
+
+
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                char c = maze.getCell(x, y) == Maze.WALL? '#' : '.';
+                tileGrid.setChar(c, y, x);
+            }
+        }
+
+        tileGrid.show();
     }
 }

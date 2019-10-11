@@ -62,7 +62,7 @@ public final class Position2D implements Serializable {
 
     @Override
     public int hashCode() {
-        return HASH + (x * 10000) + y;
+        return 37 * x * y;
     }
 
     /**
