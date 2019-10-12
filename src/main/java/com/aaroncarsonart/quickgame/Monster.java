@@ -11,13 +11,18 @@ public class Monster {
     private Position2D position;
     private int health;
     private int maxHealth;
+    private int level;
     private List<Position2D> movementPath;
 
-    public Monster(char sprite, Position2D position, int health) {
-        this.sprite = sprite;
+    public Monster(Position2D position, int index) {
         this.position = position;
-        this.health = health;
+
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        this.sprite = chars.charAt(index);
+        this.health = 10 + index * 10;
         this.maxHealth = health;
+
+        this.level = index;
     }
 
     public char getSprite() {
@@ -56,5 +61,7 @@ public class Monster {
         this.movementPath = movementPath;
     }
 
-
+    public int getLevel() {
+        return level;
+    }
 }

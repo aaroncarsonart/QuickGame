@@ -3,6 +3,7 @@ package com.aaroncarsonart.quickgame;
 import imbroglio.Maze;
 
 import javax.swing.JFrame;
+import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.GridLayout;
@@ -63,6 +64,10 @@ public class JTextGrid {
     public void setText(String s, int y, int x) {
         TilePanel panel = textGrid[y][x];
         panel.setText(s);
+    }
+
+    public TilePanel getTilePanel(int y, int x) {
+        return textGrid[y][x];
     }
 
 

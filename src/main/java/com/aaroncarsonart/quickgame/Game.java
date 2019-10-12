@@ -4,17 +4,22 @@ import imbroglio.Maze;
 import imbroglio.Position2D;
 
 import javax.swing.JFrame;
+import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Random;
+import java.util.Set;
 import java.util.Stack;
 
 /**
@@ -26,7 +31,7 @@ import java.util.Stack;
  * The goal is results, not fancily architectured code.
  */
 public class Game {
-    public static final Font FONT = new Font("Courier", Font.PLAIN, 22);
+    public static final Font FONT = new Font("Courier", Font.PLAIN, 18);
     private static final int WINDOW_WIDTH = 80;
     private static final int WINDOW_HEIGHT = 30;
     private static final int STATUS_HEIGHT = 5;
@@ -42,6 +47,7 @@ public class Game {
 
     private static final Random RNG = new Random();
 
+    private int mapLevel = 0;
 
     private int width;
     private int height;
@@ -53,6 +59,7 @@ public class Game {
 
     private Monster[][] monsterMap;
     private List<Monster> monsterList;
+    Set<Position2D> treasures;
 
     private Position2D playerPos;
     private boolean gameOver = false;
@@ -69,6 +76,7 @@ public class Game {
 
     private JTextGrid textGrid;
     private KeyListener keyListener;
+    boolean skipRepaint;
 
     public Game() {
         initGameWindow();
@@ -82,7 +90,63 @@ public class Game {
         mapWidth = width;
 
         textGrid = new JTextGrid(height, width);
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                Position2D p = new Position2D(x, y);
+                TilePanel tilePanel = textGrid.getTilePanel(y, x);
+                tilePanel.getJPanel().addMouseListener(new MouseListener() {
+                    public void mouseClicked(MouseEvent e) {
+                    }
+                    public void mousePressed(MouseEvent e) {
+                        Monster monster = monsterMap[p.y()][p.x()];
+                        if (monster != null) {
+                            String text = "Monster has " + monster.getHealth() + " health left.";
+                            int ty = mapHeight + 4;
+                            int tx = 20;
+                            drawTextLeft(text, Color.WHITE, ty, tx);
+                            for (int k = text.length(); k < 30; k++) {
+                                textGrid.setChar(' ', ty, tx + k);
+                            }
+                            textGrid.getJFrame().getContentPane().repaint();
+                        }
+                    }
+                    public void mouseReleased(MouseEvent e) {
+                    }
+                    public void mouseEntered(MouseEvent e) {
+                        Color fg = tilePanel.getFgColor();
+                        Color bg = tilePanel.getBgColor();
+                        tilePanel.setBackground(fg);
+                        tilePanel.setForeground(bg);
 
+//                        String text = p.toString();
+//                        int ty = mapHeight + 4;
+//                        int tx = 20;
+//                        drawTextLeft(text, Color.WHITE, ty, tx);
+//                        for (int k = text.length(); k < 30; k++) {
+//                            textGrid.setChar(' ', ty, tx + k);
+//                        }
+//                        textGrid.getJFrame().getContentPane().repaint();
+                    }
+                    public void mouseExited(MouseEvent e) {
+                        if (skipRepaint) {
+                            skipRepaint = false;
+                        } else {
+                            Color fg = tilePanel.getFgColor();
+                            Color bg = tilePanel.getBgColor();
+                            tilePanel.setBackground(fg);
+                            tilePanel.setForeground(bg);
+
+                            int ty = mapHeight + 4;
+                            int tx = 20;
+                            for (int k = 0; k < 30; k++) {
+                                textGrid.setChar(' ', ty, tx + k);
+                            }
+                            textGrid.getJFrame().getContentPane().repaint();
+                        }
+                    }
+                });
+            }
+        }
         update = new boolean[height][width];
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
@@ -124,30 +188,7 @@ public class Game {
             for (int x = 0; x < mapWidth; ++x) {
                 if (true || update[y][x]) {
                     update[y][x] = false;
-                    char c = gameMap[y][x];
-                    String symbol = "" + c;
-                    textGrid.setChar(c, y, x);
-                    if (c == '#') {
-//                        textArea.setBackground(DARK_RED);
-//                        textArea.setForeground(Color.RED);
-                        textGrid.setBackground(DARK_BROWN, y, x);
-                        textGrid.setForeground(BROWN, y, x);
-                    } else if (c == '"') {
-                        textGrid.setBackground(Color.BLACK, y, x);
-                        textGrid.setForeground(Color.GREEN, y, x);
-                    } else if (c == '$') {
-                        textGrid.setBackground(Color.BLACK, y, x);
-                        textGrid.setForeground(Color.YELLOW, y, x);
-                    } else if (c == 'M') {
-                        textGrid.setBackground(Color.BLACK, y, x);
-                        textGrid.setForeground(Color.RED, y, x);
-                    } else if (c == '~') {
-                        textGrid.setBackground(DARK_CYAN, y, x);
-                        textGrid.setForeground(Color.CYAN, y, x);
-                    } else {
-                        textGrid.setBackground(Color.BLACK, y, x);
-                        textGrid.setForeground(Color.DARK_GRAY, y, x);
-                    }
+                    renderGameTile(y, x);
                 }
             }
         }
@@ -155,6 +196,14 @@ public class Game {
         textGrid.setText("@", playerPos.y(), playerPos.x());
         //textGrid.setBackground(Color.BLACK, playerPos.y(), playerPos.x());
         textGrid.setForeground(Color.WHITE, playerPos.y(), playerPos.x());
+
+        // draw Monsters
+        for (Monster monster : monsterList) {
+            Position2D pos = monster.getPosition();
+            char sprite = monster.getSprite();
+            textGrid.setChar(sprite, pos.y(), pos.x());
+            textGrid.setForeground(Color.RED, pos.y(), pos.x());
+        }
 
 //        // drawPathFinding
 //        Position2D finish = new Position2D(mapWidth -1, mapHeight -1);
@@ -181,7 +230,33 @@ public class Game {
 //            }
 //
 //        }
+    }
 
+    public void renderGameTile(int y, int x) {
+        char c = gameMap[y][x];
+        textGrid.setChar(c, y, x);
+        if (c == '#') {
+            textGrid.setBackground(DARK_BROWN, y, x);
+            textGrid.setForeground(BROWN, y, x);
+        } else if (c == '"') {
+            textGrid.setBackground(Color.BLACK, y, x);
+            textGrid.setForeground(Color.GREEN, y, x);
+        } else if (c == '$') {
+            textGrid.setBackground(Color.BLACK, y, x);
+            textGrid.setForeground(Color.YELLOW, y, x);
+        } else if (c == 'M') {
+            textGrid.setBackground(Color.BLACK, y, x);
+            textGrid.setForeground(Color.RED, y, x);
+        } else if (c == '~') {
+            textGrid.setBackground(DARK_CYAN, y, x);
+            textGrid.setForeground(Color.CYAN, y, x);
+        } else if (c == '!') {
+            textGrid.setBackground(Color.BLACK, y, x);
+            textGrid.setForeground(Color.WHITE, y, x);
+        } else {
+            textGrid.setBackground(Color.BLACK, y, x);
+            textGrid.setForeground(Color.DARK_GRAY, y, x);
+        }
     }
 
     public void drawStats() {
@@ -358,14 +433,10 @@ public class Game {
         playerPos = openPaths.remove(0);
 
         // ------------------------------------------------------
-        // add items
+        // add food
         // ------------------------------------------------------
 
-        // add food
-
-        // TODO: add blobs of FOOD (USE small cellular automata blobs
-
-        int foodCount = RNG.nextInt(80) + 80;
+        int foodCount = RNG.nextInt(20) + 20;
         for (int i = 0; i < foodCount; i++) {
             if (openPaths.isEmpty()) {
                 break;
@@ -376,10 +447,15 @@ public class Game {
 
         char tile = '"';
         int count = 5;
-        int maxNeighbors = 20 + RNG.nextInt(20);
-        addBlobsOfTiles(tile, openPaths, count, maxNeighbors);
+        int maxNeighbors = 20 - mapLevel + RNG.nextInt(20 - mapLevel);
+        if (maxNeighbors > 0) {
+            addBlobsOfTiles(tile, openPaths, count, maxNeighbors);
+        }
 
-//        // add water
+        // ------------------------------------------------------
+        // add water
+        // ------------------------------------------------------
+
 //        int waterCount = RNG.nextInt(60) + 60;
 //        for (int i = 0; i < waterCount; i++) {
 //            if (openPaths.isEmpty()) {
@@ -391,60 +467,98 @@ public class Game {
 
         tile = '~';
         count = 5;
-        maxNeighbors = 10 + RNG.nextInt(10);
-        addBlobsOfTiles(tile, openPaths, count, maxNeighbors);
-
+        maxNeighbors = 10 - mapLevel + RNG.nextInt(10 - mapLevel);
+        if (maxNeighbors > 0) {
+            addBlobsOfTiles(tile, openPaths, count, maxNeighbors);
+        }
         tile = '~';
-        count = 10;
+        count = 10 - mapLevel;
         maxNeighbors = 3 + RNG.nextInt(3);
         addBlobsOfTiles(tile, openPaths, count, maxNeighbors);
 
 
+        // ------------------------------------------------------
         // add treasure
-        int treasureCount = RNG.nextInt(5) + 5;
+        // ------------------------------------------------------
+        treasures = new HashSet<>();
+        int treasureCount = RNG.nextInt(5 + mapLevel) + 5 + mapLevel;
         for (int i = 0; i < treasureCount; i++) {
             if (openPaths.isEmpty()) {
                 break;
             }
             Position2D treasurePos = openPaths.remove(RNG.nextInt(openPaths.size()));
             gameMap[treasurePos.y()][treasurePos.x()] = '$';
+            treasures.add(treasurePos);
         }
 
         tile = '$';
-        count = 15;
+        count = 1 + mapLevel;
         maxNeighbors = 5 + RNG.nextInt(5);
-        addBlobsOfTiles(tile, openPaths, count, maxNeighbors);
+        boolean useTreasure = true;
+        addBlobsOfTiles(tile, openPaths, count, maxNeighbors, useTreasure);
 
-//        // add monsters
-//        monsterMap = new Monster[mapHeight][mapWidth];
-//        monsterList = new ArrayList<>();
-//
-////        int monsterCount = 1;
-//        int monsterCount = RNG.nextInt(40) + 40;
-//        for (int i = 0; i < monsterCount; i++) {
-//            if (openPaths.isEmpty()) {
-//                break;
+        // ------------------------------------------------------
+        // add monsters
+        // ------------------------------------------------------
+        monsterMap = new Monster[mapHeight][mapWidth];
+        monsterList = new ArrayList<>();
+
+//        int monsterCount = 1;
+        int monsterCount = RNG.nextInt(10 + mapLevel * 2) + 10 + mapLevel * 2;
+        for (int i = 0; i < monsterCount; i++) {
+            if (openPaths.isEmpty()) {
+                break;
+            }
+            Position2D monsterPos = openPaths.remove(RNG.nextInt(openPaths.size()));
+            //gameMap[monsterPos.y()][monsterPos.x()] = 'M';
+
+            // TODO: implement A-Z monsters
+            int index = RNG.nextInt(Math.min(mapLevel + 1, 27));
+            Monster monster = new Monster(monsterPos, index);
+            monsterMap[monsterPos.y()][monsterPos.x()] = monster;
+            monsterList.add(monster);
+
+            List<Position2D> path = pathfindBFS(monsterPos, playerPos, 50);
+            monster.setMovementPath(path);
+        }
+
+        // ------------------------------------------------------
+        // add BANG!
+        // ------------------------------------------------------
+
+        if (!openPaths.isEmpty()) {
+            Position2D pos = openPaths.remove(RNG.nextInt(openPaths.size()));
+            gameMap[pos.y()][pos.x()] = '!';
+        }
+
+        mapLevel ++;
+
+//        // count treasures
+//        int tc1 = treasures.size();
+//        int tc2 = 0;
+//        for (int x = 0; x < mapWidth; x++) {
+//            for (int y = 0; y < mapHeight; y++) {
+//                if (gameMap[y][x] == '$') {
+//                    tc2++;
+//                }
 //            }
-//            Position2D monsterPos = openPaths.remove(RNG.nextInt(openPaths.size()));
-//            gameMap[monsterPos.y()][monsterPos.x()] = 'M';
-//
-//            Monster monster = new Monster('M', monsterPos, 10);
-//            monsterMap[monsterPos.y()][monsterPos.x()] = monster;
-//            monsterList.add(monster);
-//
-//            List<Position2D> path = pathfindBFS(monsterPos, playerPos, 0);
-//            monster.setMovementPath(path);
 //        }
+//        System.out.println("tc1: " + tc1 + " tc2:" + tc2);
     }
 
     public void addBlobsOfTiles(char tile, List<Position2D> openPaths, int count, int maxNeighbors) {
+        addBlobsOfTiles(tile, openPaths, count, maxNeighbors, false);
+    }
+
+    public void addBlobsOfTiles(char tile, List<Position2D> openPaths, int count, int maxNeighbors, boolean treasures) {
         for (int i = 0; i < count; i++) {
             if (openPaths.isEmpty()) {
                 break;
             }
-            Position2D foodPos = openPaths.remove(RNG.nextInt(openPaths.size()));
+            Position2D pos = openPaths.remove(RNG.nextInt(openPaths.size()));
+
             Stack<Position2D> positions = new Stack<>();
-            positions.add(foodPos);
+            positions.add(pos);
 
             for (int j = 0; j < maxNeighbors; j++) {
                 Position2D next = positions.peek();
@@ -466,6 +580,10 @@ public class Game {
                 if (withinBounds(position)) {
                     openPaths.remove(position);
                     gameMap[position.y()][position.x()] = tile;
+                    if (treasures) {
+                        this.treasures.add(position);
+                    }
+
                 }
             }
         }
@@ -525,6 +643,7 @@ public class Game {
     public void startGame() {
         generateGameData();
         drawMapUpdates();
+//        drawMapUpdatesCentered();
         drawStats();
         display();
     }
@@ -533,10 +652,19 @@ public class Game {
 
     public void gameLoop() {
         respondToInputs();
+        checkForNextMapLevel();
         drawMapUpdates();
+//        drawMapUpdatesCentered();
         drawStats();
         textGrid.getJFrame().getContentPane().repaint();
+        skipRepaint = true;
         System.out.println("iteration " + ++iterations);
+    }
+
+    public void checkForNextMapLevel() {
+        if (treasures.isEmpty()) {
+            generateGameData();
+        }
     }
 
     /**
@@ -589,7 +717,7 @@ public class Game {
     public void respondToInputs() {
         movePlayer();
         checkForLevelUp();
-        //moveMonsters();
+        moveMonsters();
     }
 
     public void movePlayer() {
@@ -606,18 +734,13 @@ public class Game {
             update[playerPos.y()][playerPos.x()] = true;
             playerPos = newPos;
             if (gameMap[newPos.y()][newPos.x()] == '~') {
-                energy -= 2;
+                energy -= 3;
             } else {
                 energy -= 1;
             }
 
             if (energy <= 0) {
-                treasure -= energy * 10;
-                if (treasure <= 0) {
-                    gameOver("Ran out of energy and treasure.");
-                } else {
-                    energy = 1;
-                }
+                gameOver("Ran out of energy.");
             }
 
 
@@ -636,6 +759,7 @@ public class Game {
                 gameMap[newPos.y()][newPos.x()] = '.';
                 treasure += 25;
                 experience += 1;
+                treasures.remove(newPos);
             }
 
             // found water
@@ -648,17 +772,37 @@ public class Game {
                     }
                 }
             }
-        }
-        else if (withinBounds(newPos) && gameMap[newPos.y()][newPos.x()] == 'M') {
+
+            // found bang
+            if (gameMap[newPos.y()][newPos.x()] == '!') {
+                gameMap[newPos.y()][newPos.x()] = '.';
+                for (int i = 0; i < monsterList.size(); i++) {
+                    Monster monster = monsterList.get(i);
+                    int damage = 2 * level + RNG.nextInt(5 * level);
+                    monster.setHealth(monster.getHealth() - damage);
+
+                    // check if monster killed
+                    if (monster.getHealth() <= 0) {
+                        monsterList.remove(monster);
+                        Position2D monsterPos = monster.getPosition();
+                        monsterMap[monsterPos.y()][monsterPos.x()] = null;
+                        //gameMap[monsterPos.y()][monsterPos.x()] = '.';
+                        experience += monster.getMaxHealth() / 2;
+                    }
+
+                }
+            }
+        } else if (withinBounds(newPos) && monsterMap[newPos.y()][newPos.x()] != null) {
             Monster monster = monsterMap[newPos.y()][newPos.x()];
-            int damage = level + RNG.nextInt(2 * level);
+            int damage = 1 + level + RNG.nextInt(1 + level);
             monster.setHealth(monster.getHealth() - damage);
 
             // check if monster killed
             if (monster.getHealth() <= 0) {
                 monsterList.remove(monster);
-                monsterMap[newPos.y()][newPos.x()] = null;
-                gameMap[newPos.y()][newPos.x()] = '.';
+                Position2D monsterPos = monster.getPosition();
+                monsterMap[monsterPos.y()][monsterPos.x()] = null;
+                //gameMap[newPos.y()][newPos.x()] = '.';
                 experience += monster.getMaxHealth();
             }
         }
@@ -680,12 +824,29 @@ public class Game {
         }
     }
 
+    /**
+     * Calculate the absolute value of the distance between two positions.
+     * @param a
+     * @param b
+     * @return
+     */
+    public double distance(Position2D a, Position2D b) {
+        return Math.sqrt((a.x() - b.x()) * (a.x() - b.x()) + (a.y() - b.y()) * (a.y() - b.y()));
+    }
+
     public void moveMonsters() {
         for (Monster monster : monsterList) {
-            List<Position2D> movementPath = pathfindBFS(monster.getPosition(), playerPos, 0);
+            List<Position2D> movementPath = pathfindBFS(monster.getPosition(), playerPos, 50);
             monster.setMovementPath(movementPath);
             Position2D old = monster.getPosition();
             Position2D next;
+
+            // stay still if far away from the player
+            int distance = (int) distance(old, playerPos);
+            boolean stayStill = RNG.nextInt(distance) > RNG.nextInt(15);
+            if (stayStill) {
+                continue;
+            }
 
             // Move randomly if path is empty
             // Or, if chance to move random rolls true
@@ -702,7 +863,8 @@ public class Game {
                     monster.setMovementPath(null);
                 } else if (next.equals(playerPos)) {
                     next = old;
-                    health -= 1 + RNG.nextInt(level);
+                    int damage = RNG.nextInt(monster.getLevel() + 1) + monster.getLevel() + 1;
+                    health -= damage;
                     if (health <= 0) {
                         treasure -= Math.abs(health) * 25;
                         health = 0;
@@ -716,8 +878,8 @@ public class Game {
             try {
                 monsterMap[old.y()][old.x()] = null;
                 monsterMap[next.y()][next.x()] = monster;
-                gameMap[old.y()][old.x()] = '.';
-                gameMap[next.y()][next.x()] = 'M';
+//                gameMap[old.y()][old.x()] = '.';
+//                gameMap[next.y()][next.x()] = 'M';
                 monster.setPosition(next);
             } catch (ArrayIndexOutOfBoundsException e) {
                 System.out.println ("Hello");
@@ -726,14 +888,15 @@ public class Game {
     }
 
     public Position2D getRandomNeighboringPosition(Position2D old) {
-        List<Position2D> neighbors = old.getNeighbors();
 
-        for (int i = 0; i < neighbors.size(); i++) {
-            Position2D neighbor = neighbors.get(i);
-            if (!withinBounds(old) || occupied(old)) {
+        List<Position2D> neighbors = old.getNeighbors();
+        for (int k = 0; k < neighbors.size(); k++) {
+            Position2D neighbor = neighbors.get(k);
+            if (!withinBounds(neighbor) || occupied(neighbor, "#M")) {
                 neighbors.remove(neighbor);
             }
         }
+
         if (neighbors.isEmpty()) {
             return old;
         } else {
@@ -746,12 +909,16 @@ public class Game {
     }
 
     public boolean occupied(Position2D p) {
+        return occupied(p, "#");
+    }
+
+    public boolean occupied(Position2D p, String chars) {
         char c = gameMap[p.y()][p.x()];
-        return "#M".contains(String.valueOf(c));
+        return chars.contains(String.valueOf(c)) || monsterMap[p.y()][p.x()] != null;
     }
 
     public boolean occupied(Position2D p, char sprite) {
-        return gameMap[p.y()][p.x()] == sprite;
+        return gameMap[p.y()][p.x()] == sprite || monsterMap[p.y()][p.x()] != null;
     }
 
     public void gameOver(String message) {
@@ -760,5 +927,4 @@ public class Game {
         drawTextLeft("Game Over!  " + message, Color.WHITE, mapHeight + 2, 20);
         jFrame.getContentPane().repaint();
     }
-
 }
