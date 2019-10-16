@@ -28,7 +28,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.aaroncarsonart.tarotrl.main.TarotRLApp</mainClass>
+                            <mainClass>com.aaroncarsonart.quickgame.Main</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

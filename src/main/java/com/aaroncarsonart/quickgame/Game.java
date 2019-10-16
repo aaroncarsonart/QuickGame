@@ -38,9 +38,9 @@ public class Game {
 
     public static final Color BROWN = new Color(165, 82, 0);
     public static final Color DARK_BROWN = new Color(50, 15, 0);
+    public static final Color DARK_CYAN = new Color(0, 30, 30);
     public static final Color ORANGE = new Color(255, 165, 0);
     public static final Color DARK_RED = new Color(45, 0, 0);
-    public static final Color DARK_CYAN = new Color(0, 30, 30);
     public static final Color DARK_GREEN = new Color(0, 30, 0);
     public static final Color DARK_YELLOW = new Color(30, 30, 0);
 
