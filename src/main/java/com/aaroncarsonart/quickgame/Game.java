@@ -1,18 +1,13 @@
 package com.aaroncarsonart.quickgame;
 
-import imbroglio.Maze;
-import imbroglio.Position2D;
+import com.aaroncarsonart.imbroglio.Maze;
+import com.aaroncarsonart.imbroglio.Position2D;
 
 import javax.swing.JFrame;
-import javax.swing.JPanel;
 import java.awt.Color;
-import java.awt.Container;
 import java.awt.Font;
-import java.awt.GridLayout;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;

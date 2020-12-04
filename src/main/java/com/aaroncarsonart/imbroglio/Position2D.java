@@ -1,4 +1,4 @@
-package imbroglio;
+package com.aaroncarsonart.imbroglio;
 
 //import com.aaroncarsonart.tarotrl.map.Region2D;
 //import com.aaroncarsonart.tarotrl.world.Position3D;

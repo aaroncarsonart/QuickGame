@@ -1,4 +1,4 @@
-package imbroglio;
+package com.aaroncarsonart.imbroglio;
 
 /**
  * Orientation is similar to Direction2D, but gives different information, it says

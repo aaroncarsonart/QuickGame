@@ -1,4 +1,4 @@
-package imbroglio;
+package com.aaroncarsonart.imbroglio;
 
 /**
  * Direction2D enum for abstracting directional input.

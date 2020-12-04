@@ -1,13 +1,11 @@
 package com.aaroncarsonart.quickgame;
 
-import imbroglio.Maze;
+import com.aaroncarsonart.imbroglio.Maze;
 
 import javax.swing.JFrame;
-import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.GridLayout;
-import java.awt.event.KeyListener;
 
 public class JTextGrid {
 

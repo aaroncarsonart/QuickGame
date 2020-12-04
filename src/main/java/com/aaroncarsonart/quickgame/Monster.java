@@ -1,7 +1,6 @@
 package com.aaroncarsonart.quickgame;
 
-import imbroglio.Graph;
-import imbroglio.Position2D;
+import com.aaroncarsonart.imbroglio.Position2D;
 
 import java.util.List;
 

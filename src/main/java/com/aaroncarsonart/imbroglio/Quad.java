@@ -1,4 +1,4 @@
-package imbroglio;
+package com.aaroncarsonart.imbroglio;
 
 /**
  * A Quad is an axis-aligned bounding box, represented by a center point and The

@@ -1,4 +1,4 @@
-package imbroglio;
+package com.aaroncarsonart.imbroglio;
 
 // import com.aaroncarsonart.tarotrl.util.Logger;
 
