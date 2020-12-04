@@ -4,7 +4,7 @@ A quickly developed [Roguelike](https://en.wikipedia.org/wiki/Roguelike)-inspire
 ## License
 This project is licensed under the [MIT license](LICENSE.txt).
 
-![Level 5](https://github.com/aaroncarsonart/QuickGame/blob/master/screenshots/level5.png?raw=true "Level 5")
+![Level 5](/screenshots/level5.png?raw=true "Level 5")
 
 --------------------------------------------------------------------------------------
 
@@ -44,4 +44,4 @@ Navigate the map using the arrow keys.
 
 --------------------------------------------------------------------------------------
 
-![Level 1](https://github.com/aaroncarsonart/QuickGame/blob/master/screenshots/level1.png?raw=true "Level 1")
+![Level 1](/screenshots/level1.png?raw=true "Level 1")
