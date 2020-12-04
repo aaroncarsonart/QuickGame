@@ -26,8 +26,7 @@ java -jar target/QuickGame-0.1-SNAPSHOT.jar
 
 ### Objective
 Collect all yellow treasure `$` tiles to advance to the next depth. The game ends
-when you run out of health or energy.  Treasure is depleted when energy runs out.
-See how deep you can get!
+when you run out of health or energy.  See how deep you can get!
 
 ### Nagivation and Rules
 Navigate the map using the arrow keys.
@@ -40,6 +39,8 @@ Navigate the map using the arrow keys.
   the letter, the stronger the enemy.
 - Defeating enemies yields exp.  Gain enough exp to level up, increasing your health
   and attack power.
+- Note that treasure is depleted when health runs out.  If treasure also runs out, then
+  it's game over.
 
 --------------------------------------------------------------------------------------
 
