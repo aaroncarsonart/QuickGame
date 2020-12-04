@@ -26,7 +26,7 @@ java -jar target/QuickGame-0.1-SNAPSHOT.jar
 
 ### Objective
 Collect all yellow treasure `$` tiles to advance to the next depth. The game ends
-when you run out of health or energy (treasure is depleted when energy runs out).
+when you run out of health or energy.  Treasure is depleted when energy runs out.
 See how deep you can get!
 
 ### Nagivation and Rules
